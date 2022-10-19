@@ -22,6 +22,9 @@ from torch.nn import init
 import matplotlib.pyplot as plt
 from scipy.io import loadmat
 
+import json
+from json import JSONEncoder
+
 ## Dataloader
 class DataLoader(torch.utils.data.Dataset):
     def __init__(self,split="Train",path_to_data="D:\Diploma_thesis_segmentation_disc/Data_640_640",color_preprocesing="RGB",segmentation_type="disc",output_size=(int(608),int(608),int(3))):
@@ -34,15 +37,18 @@ class DataLoader(torch.utils.data.Dataset):
         
         if split=="Train":
             self.files_img=glob.glob(self.path_to_data+'/Images_crop/*.png')
+            self.files_img_orig=glob.glob(self.path_to_data+'/Images_orig_crop/*.png')
             self.files_disc=glob.glob(self.path_to_data+'/Disc_crop/*.png')
             self.files_cup=glob.glob(self.path_to_data+'/Cup_crop/*.png')
             self.files_img.sort()
+            self.files_img_orig.sort()
             self.files_disc.sort()
             self.files_cup.sort()
             self.num_of_imgs=len(self.files_img)
             
         if split=="Test":
             self.files_img=glob.glob(self.path_to_data+'/Images/*.png')
+            self.files_img_orig=glob.glob(self.path_to_data+'/Images_orig/*.png')
             self.files_disc=glob.glob(self.path_to_data+'/Disc/*.png')
             self.files_cup=glob.glob(self.path_to_data+'/Cup/*.png')
             self.files_fov=glob.glob(self.path_to_data+'/Fov/*.png')
@@ -57,15 +63,16 @@ class DataLoader(torch.utils.data.Dataset):
         #Load of Train images
         if self.split=="Train":
             img=imread(self.files_img[index])
+            img_orig=imread(self.files_img_orig[index])
             disc=imread(self.files_disc[index]).astype(bool)
             cup=imread(self.files_cup[index]).astype(bool)
             output_size=self.output_size
             input_size=img.shape
             
-            img,disc,cup=self.random_crop(input_size,output_size,img,disc,cup)
-            img,disc,cup=self.random_rotflip(img,disc,cup)
+            img,img_orig,disc,cup=self.random_crop(input_size,output_size,img,img_orig,disc,cup)
+            img,img_orig,disc,cup=self.random_rotflip(img,img_orig,disc,cup)
             
-            
+            img_orig=img_orig.astype(np.float32)
                       
             #Preprocesing of img
             if(self.color_preprocesing=="RGB"):
@@ -99,17 +106,21 @@ class DataLoader(torch.utils.data.Dataset):
                 
             mask_output=mask_output.astype(bool)
             img=TF.to_tensor(img)
+            img_orig=TF.to_tensor(img_orig)
             mask=torch.from_numpy(mask_output)
-            return img,mask
+            return img,img_orig,mask
         
         if self.split=="Test":
-            img_orig=imread(self.files_img[index])
+            img_full=imread(self.files_img[index])
+            img_orig_full=imread(self.files_img_orig[index])
             disc_orig=imread(self.files_disc[index]).astype(bool)
             cup_orig=imread(self.files_cup[index]).astype(bool)
             fov_orig=imread(self.files_fov[index]).astype(bool)
             output_size=self.output_size
             
-            output_crop_image, output_mask_disc,output_mask_cup=Crop_image(img_orig,disc_orig,cup_orig,output_size, self.disc_centres_test.get('Disc_centres_test')[index])
+            output_crop_image,output_crop_orig_image, output_mask_disc,output_mask_cup=Crop_image(img_full,img_orig_full,disc_orig,cup_orig,output_size, self.disc_centres_test.get('Disc_centres_test')[index])
+            
+            img_orig_crop=output_crop_orig_image.astype(np.float32)
             
             #Preprocesing of img
             if(self.color_preprocesing=="RGB"):
@@ -143,63 +154,40 @@ class DataLoader(torch.utils.data.Dataset):
                 
             mask_output=mask_output.astype(bool)
             img_crop=TF.to_tensor(img_crop)
+            img_orig_crop=TF.to_tensor(img_orig_crop)
             mask_output=torch.from_numpy(mask_output)
             coordinates=self.disc_centres_test.get('Disc_centres_test')[index].astype(np.int16)
-            return img_crop,mask_output,img_orig,disc_orig,cup_orig,coordinates
-        
-        if self.split=="HRF":
-            img_orig=imread(self.files_img[index])
-            fov_orig=imread(self.files_fov[index]).astype(bool)
-            output_size=self.output_size
-            #sigma=60
-            #size_of_erosion=80            
-            #center_new=Detection_of_disc(img_orig,fov_orig[:,:,0],sigma,size_of_erosion)
-            output_crop_image=Crop_image_HRF(img_orig,output_size,self.Disc_centres_HRF.get('center_new_HRF')[index].astype(np.int16))
-            #coordinates=np.array(center_new)
-            
-            #Preprocesing of img
-            if(self.color_preprocesing=="RGB"):
-                img_crop=output_crop_image.astype(np.float32)
-                
-            if(self.color_preprocesing=="gray"):
-                img_crop=rgb2gray(output_crop_image).astype(np.float32)              
-            
-            if(self.color_preprocesing=="HSV"):
-                img_crop=rgb2hsv(output_crop_image).astype(np.float32)
-                
-            if(self.color_preprocesing=="XYZ"):
-                img_crop=rgb2xyz(output_crop_image).astype(np.float32)
-            
-            img_crop=TF.to_tensor(img_crop)
-            
-            coordinates=self.Disc_centres_HRF.get('center_new_HRF')[index].astype(np.int16)
-            return img_crop,img_orig,coordinates
-            
+            return img_crop,img_orig_crop, mask_output, img_full, img_orig_full, disc_orig,cup_orig, coordinates
+           
         
         
-    def random_crop(self,in_size,out_size,img,disc,cup):
+    def random_crop(self,in_size,out_size,img,img_orig,disc,cup):
         r=[int(torch.randint(in_size[0]-out_size[0],(1,1)).view(-1).numpy()),int(torch.randint(in_size[1]-out_size[1],(1,1)).view(-1).numpy())]
         img_crop=img[r[0]:r[0]+out_size[0],r[1]:r[1]+out_size[1],:]
+        img_orig_crop=img_orig[r[0]:r[0]+out_size[0],r[1]:r[1]+out_size[1],:]
         disc_crop=disc[r[0]:r[0]+out_size[0],r[1]:r[1]+out_size[1]]
         cup_crop=cup[r[0]:r[0]+out_size[0],r[1]:r[1]+out_size[1]]
-        return img_crop.copy(),disc_crop.copy(),cup_crop.copy()
+        return img_crop.copy(),img_orig_crop.copy(),disc_crop.copy(),cup_crop.copy()
     
-    def random_rotflip(self,img,disc,cup):
+    def random_rotflip(self,img,img_orig,disc,cup):
             r=[torch.randint(2,(1,1)).view(-1).numpy(),torch.randint(2,(1,1)).view(-1).numpy(),torch.randint(4,(1,1)).view(-1).numpy()]
             if r[0]:
                 img=np.fliplr(img)
+                img_orig=np.fliplr(img_orig)
                 disc=np.fliplr(disc)
                 cup=np.fliplr(cup)
             if r[1]:
                 img=np.flipud(img)
+                img_orig=np.flipud(img_orig)
                 disc=np.flipud(disc)
                 cup=np.flipud(cup)
     
             img=np.rot90(img,k=r[2])
+            img_orig=np.rot90(img_orig,k=r[2])
             disc=np.rot90(disc,k=r[2]) 
             cup=np.rot90(cup,k=r[2]) 
     
-            return img.copy(),disc.copy(),cup.copy()
+            return img.copy(),img_orig.copy(),disc.copy(),cup.copy()
              
                   
         
@@ -353,7 +341,7 @@ def Detection_of_disc(image,fov,sigma,size_of_erosion):
     center_new.append(r)
     return center_new
     
-def Crop_image(image,mask_disc,mask_cup,output_image_size,center_new): 
+def Crop_image(image,image_orig,mask_disc,mask_cup,output_image_size,center_new): 
     size_in_img=image.shape
     x_half=int(output_image_size[0]/2)
     y_half=int(output_image_size[1]/2)  
@@ -373,31 +361,10 @@ def Crop_image(image,mask_disc,mask_cup,output_image_size,center_new):
         y_start=center_new[0]-y_half
     
     output_crop_image=image[x_start:x_start+output_image_size[0],y_start:y_start+output_image_size[1],:]
+    output_crop_orig_image=image_orig[x_start:x_start+output_image_size[0],y_start:y_start+output_image_size[1],:]
     output_mask_disc=mask_disc[x_start:x_start+output_image_size[0],y_start:y_start+output_image_size[1]]
     output_mask_cup=mask_cup[x_start:x_start+output_image_size[0],y_start:y_start+output_image_size[1]]
-    return output_crop_image, output_mask_disc,output_mask_cup
-
-def Crop_image_HRF(image,output_image_size,center_new): 
-    size_in_img=image.shape
-    x_half=int(output_image_size[0]/2)
-    y_half=int(output_image_size[1]/2)  
-    
-    if ((center_new[1]-x_half)<0):
-        x_start=0
-    elif ((center_new[1]+x_half)>size_in_img[0]):
-        x_start=size_in_img[0]-output_image_size[0]
-    else:
-        x_start=center_new[1]-x_half        
-    
-    if ((center_new[0]-y_half)<0):
-        y_start=0
-    elif ((center_new[0]+y_half)>size_in_img[1]):
-        y_start=size_in_img[1]-output_image_size[1]
-    else:
-        y_start=center_new[0]-y_half
-    
-    output_crop_image=image[x_start:x_start+output_image_size[0],y_start:y_start+output_image_size[1],:]
-    return output_crop_image
+    return output_crop_image, output_crop_orig_image,output_mask_disc,output_mask_cup
 
 
 def Postprocesing(output,min_size,type_of_morphing,size_of_disk,ploting):
@@ -432,6 +399,19 @@ def Postprocesing(output,min_size,type_of_morphing,size_of_disk,ploting):
         plt.show()
     
     return output_final
+
+class NumpyArrayEncoder(JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return JSONEncoder.default(self, obj)
+
+def zapis_kontury(ZAPISOVAT,contours,dir_pom,name_of_img,type_of_contur):    
+    if ZAPISOVAT:
+        numpyData = {"array": contours}
+        encodedNumpyData = json.dumps(numpyData, cls=NumpyArrayEncoder)
+        with open(dir_pom+'/' + name_of_img + type_of_contur +".json", "w") as fp:
+                json.dump(encodedNumpyData, fp)
     
 
 
