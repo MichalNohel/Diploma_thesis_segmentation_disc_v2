@@ -29,13 +29,13 @@ from json import JSONEncoder
 class DataLoader(torch.utils.data.Dataset):
     def __init__(self,split="Train",path_to_data="D:\Diploma_thesis_segmentation_disc/Data_640_640",color_preprocesing="RGB",segmentation_type="disc",output_size=(int(608),int(608),int(3))):
         self.split=split
-        self.path_to_data=path_to_data+ '/' +split
         self.color_preprocesing=color_preprocesing
         self.segmentation_type=segmentation_type
         self.output_size=output_size
         
         
         if split=="Train":
+            self.path_to_data=path_to_data+ '/' +split
             self.files_img=glob.glob(self.path_to_data+'/Images_crop/*.png')
             self.files_img_orig=glob.glob(self.path_to_data+'/Images_orig_crop/*.png')
             self.files_disc=glob.glob(self.path_to_data+'/Disc_crop/*.png')
@@ -47,12 +47,24 @@ class DataLoader(torch.utils.data.Dataset):
             self.num_of_imgs=len(self.files_img)
             
         if split=="Test":
+            self.path_to_data=path_to_data+ '/' +split
             self.files_img=glob.glob(self.path_to_data+'/Images/*.png')
             self.files_img_orig=glob.glob(self.path_to_data+'/Images_orig/*.png')
             self.files_disc=glob.glob(self.path_to_data+'/Disc/*.png')
             self.files_cup=glob.glob(self.path_to_data+'/Cup/*.png')
             self.files_fov=glob.glob(self.path_to_data+'/Fov/*.png')
             self.disc_centres_test=loadmat(self.path_to_data+'/Disc_centres_test.mat')          
+            self.num_of_imgs=len(self.files_img)
+        
+        if split=="UBMI":
+            self.path_to_data=path_to_data
+            self.files_img=glob.glob(self.path_to_data+'/Images/*.png')
+            self.files_img_orig=glob.glob(self.path_to_data+'/Images_orig/*.png')
+            self.files_img_orig_full=glob.glob(self.path_to_data+'/Images_orig_full/*.png')
+            self.files_disc=glob.glob(self.path_to_data+'/Disc/*.png')
+            self.files_cup=glob.glob(self.path_to_data+'/Cup/*.png')
+            self.files_fov=glob.glob(self.path_to_data+'/Fov/*.png')
+            self.disc_centres_test=loadmat(self.path_to_data+'/Disc_centres_test_UBMI.mat')          
             self.num_of_imgs=len(self.files_img)
             
             
@@ -159,6 +171,55 @@ class DataLoader(torch.utils.data.Dataset):
             coordinates=self.disc_centres_test.get('Disc_centres_test')[index].astype(np.int16)
             return img_crop,img_orig_crop, mask_output, img_full, img_orig_full, disc_orig,cup_orig, coordinates
            
+        if self.split=="UBMI":
+            img_full=imread(self.files_img[index])
+            img_orig_full=imread(self.files_img_orig[index])
+            img_orig_neprevzorkovany=imread(self.files_img_orig_full[index])
+            disc_orig=imread(self.files_disc[index]).astype(bool)
+            cup_orig=imread(self.files_cup[index]).astype(bool)
+            fov_orig=imread(self.files_fov[index]).astype(bool)
+            output_size=self.output_size
+            
+            output_crop_image,output_crop_orig_image, output_mask_disc,output_mask_cup=Crop_image(img_full,img_orig_full,disc_orig,cup_orig,output_size, self.disc_centres_test.get('Disc_centres_test')[index])
+            
+            img_orig_crop=output_crop_orig_image.astype(np.float32)
+            
+            #Preprocesing of img
+            if(self.color_preprocesing=="RGB"):
+                img_crop=output_crop_image.astype(np.float32)
+                
+            if(self.color_preprocesing=="gray"):
+                img_crop=rgb2gray(output_crop_image).astype(np.float32)              
+            
+            if(self.color_preprocesing=="HSV"):
+                img_crop=rgb2hsv(output_crop_image).astype(np.float32)
+                
+            if(self.color_preprocesing=="XYZ"):
+                img_crop=rgb2xyz(output_crop_image).astype(np.float32)
+            
+            #Creation of labels masks: batch x width x height
+            if(self.segmentation_type=="disc"):
+                mask_output_size=(int(1),output_size[0],output_size[1]) # output size of image
+                mask_output=np.zeros(mask_output_size)
+                mask_output[0,:,:]=output_mask_disc                
+            elif(self.segmentation_type=="cup"):
+                mask_output_size=(int(1),output_size[0],output_size[1]) # output size of image
+                mask_output=np.zeros(mask_output_size)
+                mask_output[0,:,:]=output_mask_cup
+            elif(self.segmentation_type=="disc_cup"):
+                mask_output_size=(int(2),output_size[0],output_size[1]) # output size of image
+                mask_output=np.zeros(mask_output_size)
+                mask_output[0,:,:]=output_mask_disc
+                mask_output[1,:,:]=output_mask_cup
+            else:
+                print("Wrong type of segmentation")
+                
+            mask_output=mask_output.astype(bool)
+            img_crop=TF.to_tensor(img_crop)
+            img_orig_crop=TF.to_tensor(img_orig_crop)
+            mask_output=torch.from_numpy(mask_output)
+            coordinates=self.disc_centres_test.get('Disc_centres_test')[index].astype(np.int16)
+            return img_crop,img_orig_crop, mask_output, img_full, img_orig_full, disc_orig,cup_orig, coordinates, img_orig_neprevzorkovany
         
         
     def random_crop(self,in_size,out_size,img,img_orig,disc,cup):
