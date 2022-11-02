@@ -62,7 +62,7 @@ if __name__ == "__main__":
     UBMI_loader=torch.utils.data.DataLoader(loader,batch_size=batch, num_workers=0, shuffle=False)
     test_files_name=UBMI_loader.dataset.files_img
     
-    path_to_google='D:\Diploma_thesis_segmentation_disc_v2\Sada_01_Pracovni_michal'
+    path_to_google='H:\Sdílené disky\Retina GAČR\Měření na UBMI\Sada01\Sada_01'
     files_google=os.listdir(path_to_google)
     
     
@@ -213,8 +213,12 @@ if __name__ == "__main__":
              
              for i in range(len(files_google)):
                  if files_google[i][0:14]==name_of_img[0:14]:
-                     file_tmp_disc=path_to_google + '/' + files_google[i]+'/ImageAnalysis/Disc_automated_segmentation/'
-                     file_tmp_cup=path_to_google + '/' + files_google[i]+'/ImageAnalysis/Cup_automated_segmentation/'
+                     
+                     if (len(files_google[i])!=len(files_google[0])):
+                         continue
+                     
+                     file_tmp_disc=path_to_google + '/' + files_google[i]+'/ImageAnalysis/Disc_automated_segmentation_v1/'
+                     file_tmp_cup=path_to_google + '/' + files_google[i]+'/ImageAnalysis/Cup_automated_segmentation_v1/'
                      isExist = os.path.exists(file_tmp_disc)
                      if not isExist:
                          os.makedirs(file_tmp_disc)
