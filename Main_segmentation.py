@@ -21,18 +21,18 @@ if __name__ == "__main__":
     #Parameters
     lr=0.001
     epochs=30
-    batch=16
+    batch=12
     threshold=0.5
     color_preprocesing="RGB"    
     
-    output_size=(int(288),int(288),int(3))
+    output_size=(int(448),int(448),int(3))
 
-    path_to_data="D:\Diploma_thesis_segmentation_disc_v2/Data_320_320_25px_preprocesing_all_database"
+    path_to_data="D:\Diploma_thesis_segmentation_disc_v2/Data_480_480_35px_preprocesing_all_database"
     
     # Disc and cup together
     segmentation_type="disc_cup" 
-    path_to_save_model = path_to_data+ '/Naucene_modely/disc_and_cup_detection_25px_all_databases/'
-    name_of_model='model_03_disc_cup_25px_all_modified_databases'
+    path_to_save_model = path_to_data+ '/Naucene_modely/'
+    name_of_model='model_01_disc_cup_35px_all_modified_databases'
     
     # Disc segmentation
     '''

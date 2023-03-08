@@ -433,7 +433,9 @@ def Postprocesing(output,min_size,type_of_morphing,size_of_disk,ploting):
     output_final=binary_fill_holes(output)
     output_final=remove_small_objects(output_final,min_size=min_size)
     
-    output_final=np.pad(output_final, pad_width=[(50, 50),(50, 50)], mode='constant')
+    padding=50
+    
+    output_final=np.pad(output_final, pad_width=[(padding, padding),(padding, padding)], mode='constant')
     
     if (type_of_morphing=="closing"):
         output_final=binary_closing(output_final,disk(size_of_disk))
@@ -446,7 +448,7 @@ def Postprocesing(output,min_size,type_of_morphing,size_of_disk,ploting):
         output_final=binary_opening(output_final,disk(size_of_disk)) 
         output_final=binary_closing(output_final,disk(size_of_disk))  
         
-    output_final=output_final[50:338,50:338]
+    output_final=output_final[padding:output_final.shape[0]-padding,padding:output_final.shape[1]-padding]
     
     if ploting:        
         plt.figure(figsize=[10,10])

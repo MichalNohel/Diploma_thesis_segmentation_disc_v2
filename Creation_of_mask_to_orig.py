@@ -25,23 +25,44 @@ if __name__ == "__main__":
     threshold=0.5
     color_preprocesing="RGB"
 
-    output_size=(int(288),int(288),int(3))
+
+    #Rozliseni_320_320_25px
     
+    '''
+    output_size=(int(288),int(288),int(3))  
     #path_to_data="D:\Diploma_thesis_segmentation_disc_v2/Data_320_320_25px_preprocesing_all_database"
-    
     #mereni UBMI
     path_to_data="D:\Diploma_thesis_segmentation_disc_v2/Data_320_320_25px_preprocesing_UBMI_mereni_verze_2"   
-    
-    
     # Cesta k naucenemu modelu
     path_to_model="D:\Diploma_thesis_segmentation_disc_v2/Data_320_320_25px_preprocesing_all_database/Naucene_modely/"
-    
     # Disc and cup together
     segmentation_type="disc_cup"
     path_to_save_model = path_to_model + 'disc_and_cup_detection_25px_all_databases/'
     name_of_model='model_02_disc_cup_25px_all_modified_databases'
     net=Unet(out_size=2).cuda()  
     net.load_state_dict(torch.load(path_to_save_model+ name_of_model+ '.pth'))    
+    '''
+    
+    #Rozliseni_480_480_35px
+
+    output_size=(int(448),int(448),int(3))  
+    
+    #mereni UBMI
+    #Sada01
+    #path_to_data="D:\Diploma_thesis_segmentation_disc_v2/Data_480_480_35px_preprocesing_UBMI_mereni_verze_2"   
+    #Sada02
+    path_to_data="D:\Diploma_thesis_segmentation_disc_v2/Data_480_480_35px_preprocesing_UBMI_mereni_verze_2_sada02"   
+    # Cesta k naucenemu modelu
+    path_to_model="D:\Diploma_thesis_segmentation_disc_v2/Data_480_480_35px_preprocesing_all_database/Naucene_modely/"
+    # Disc and cup together
+    segmentation_type="disc_cup"
+    path_to_save_model = path_to_model + 'disc_and_cup_detection_35px_all_databases/'
+    name_of_model='model_01_disc_cup_35px_all_modified_databases'
+    net=Unet(out_size=2).cuda()  
+    net.load_state_dict(torch.load(path_to_save_model+ name_of_model+ '.pth'))    
+    
+    
+    
     
     
     net.eval()
@@ -61,8 +82,16 @@ if __name__ == "__main__":
     loader=DataLoader(split="UBMI",path_to_data=path_to_data,color_preprocesing=color_preprocesing,segmentation_type=segmentation_type,output_size=output_size)
     UBMI_loader=torch.utils.data.DataLoader(loader,batch_size=batch, num_workers=0, shuffle=False)
     test_files_name=UBMI_loader.dataset.files_img
+    ''' Sada01
+    #path_to_google='H:\Sdílené disky\Retina GAČR\Měření na UBMI\Sada01\Sada_01'
+    path_to_google='D:\Diploma_thesis_segmentation_disc_v2\Sada_01_Pracovni_michal'
+    '''
+    #Sada02
+    #path_to_google='H:\Sdílené disky\Retina GAČR\Měření na UBMI\Sada02\Sada_02'
+    path_to_google='D:\Diploma_thesis_segmentation_disc_v2\Sada_02_Pracovni_michal'
     
-    path_to_google='H:\Sdílené disky\Retina GAČR\Měření na UBMI\Sada01\Sada_01'
+    verze='v1/'
+    
     files_google=os.listdir(path_to_google)
     
     
@@ -77,7 +106,7 @@ if __name__ == "__main__":
              
              lbl=lbl.detach().cpu().numpy()
              
-             test_files_name_tmp=test_files_name[kk][97:]
+             test_files_name_tmp=test_files_name[kk][104:]
              name_of_img=test_files_name_tmp[:-4]
              
              dir_pom=path_to_extracted_data+name_of_img
@@ -212,13 +241,13 @@ if __name__ == "__main__":
              
              
              for i in range(len(files_google)):
-                 if files_google[i][0:14]==name_of_img[0:14]:
+                 if files_google[i][0:11]==name_of_img[0:11]:
                      
                      if (len(files_google[i])!=len(files_google[0])):
                          continue
                      
-                     file_tmp_disc=path_to_google + '/' + files_google[i]+'/ImageAnalysis/Disc_automated_segmentation_v1/'
-                     file_tmp_cup=path_to_google + '/' + files_google[i]+'/ImageAnalysis/Cup_automated_segmentation_v1/'
+                     file_tmp_disc=path_to_google + '/' + files_google[i]+'/ImageAnalysis/Disc_automated_segmentation_' +verze
+                     file_tmp_cup=path_to_google + '/' + files_google[i]+'/ImageAnalysis/Cup_automated_segmentation_' +verze
                      isExist = os.path.exists(file_tmp_disc)
                      if not isExist:
                          os.makedirs(file_tmp_disc)
@@ -227,10 +256,13 @@ if __name__ == "__main__":
                      if not isExist:
                          os.makedirs(file_tmp_cup)
                      
-                 
-                     imsave(file_tmp_disc + name_of_img +"_Disc.png",output_mask_disc_final_orig_shape)  
-                     imsave(file_tmp_cup + name_of_img +"_Cup.png",output_mask_cup_final_orig_shape)
-                     
+                     if files_google[i][14]=='1':
+                         imsave(file_tmp_disc + name_of_img +"_Disc.png",output_mask_disc_final_orig_shape)  
+                         imsave(file_tmp_cup + name_of_img +"_Cup.png",output_mask_cup_final_orig_shape)
+                     else:
+                         imsave(file_tmp_disc + name_of_img[:14]+"2"+name_of_img[15:] +"_Disc.png",output_mask_disc_final_orig_shape)  
+                         imsave(file_tmp_cup + name_of_img[:14]+"2"+name_of_img[15:] +"_Cup.png",output_mask_cup_final_orig_shape)
+                         
                  
 
              

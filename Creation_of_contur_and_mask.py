@@ -26,13 +26,14 @@ if __name__ == "__main__":
     threshold=0.5
     color_preprocesing="RGB"
 
-    output_size=(int(288),int(288),int(3))
+
     
+    #Rozliseni_320_320_25px
+    '''
+    output_size=(int(288),int(288),int(3))    
     #path_to_data="D:\Diploma_thesis_segmentation_disc_v2/Data_320_320_25px_preprocesing_all_database"
-    
     #mereni UBMI
     path_to_data="D:\Diploma_thesis_segmentation_disc_v2/Data_320_320_25px_preprocesing_UBMI_mereni"   
-    
     
     # Cesta k naucenemu modelu
     path_to_model="D:\Diploma_thesis_segmentation_disc_v2/Data_320_320_25px_preprocesing_all_database/Naucene_modely/"
@@ -43,7 +44,7 @@ if __name__ == "__main__":
     name_of_model='model_02_disc_cup_25px_all_modified_databases'
     net=Unet(out_size=2).cuda()  
     net.load_state_dict(torch.load(path_to_save_model+ name_of_model+ '.pth'))    
-    
+    '''
     # Disc segmentation
     '''
     segmentation_type="disc"    
@@ -62,8 +63,27 @@ if __name__ == "__main__":
     '''
     
     
+    #Rozliseni_480_480_35px
+    
+    output_size=(int(448),int(448),int(3))    
+    path_to_data="D:\Diploma_thesis_segmentation_disc_v2/Data_480_480_35px_preprocesing_all_database"
+    #mereni UBMI
+    #path_to_data="D:\Diploma_thesis_segmentation_disc_v2/Data_480_480_35px_preprocesing_UBMI_mereni"   
+    
+    # Cesta k naucenemu modelu
+    path_to_model="D:\Diploma_thesis_segmentation_disc_v2/Data_480_480_35px_preprocesing_all_database/Naucene_modely/"
+    
+    # Disc and cup together
+    segmentation_type="disc_cup"
+    path_to_save_model = path_to_model + 'disc_and_cup_detection_35px_all_databases/'
+    name_of_model='model_01_disc_cup_35px_all_modified_databases'
+    net=Unet(out_size=2).cuda()  
+    net.load_state_dict(torch.load(path_to_save_model+ name_of_model+ '.pth'))    
+    
+    
     net.eval()
     path_to_extracted_data=path_to_data+ "/Results_closing_opening_40/"  
+    
     
     #Postsprocesing parameters
     min_size_of_optic_disk=1000
