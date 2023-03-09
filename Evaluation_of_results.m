@@ -5,11 +5,12 @@ clc
 path_to_data='D:\Diploma_thesis_segmentation_disc_v2\Data_480_480_35px_preprocesing_all_database\Vysledky_test_data_vystup_site\Data_480_480_35px/';
 images_file = dir(path_to_data);
 images_file(1:2)=[];
-image=logical(imread([images_file(1).folder '\' images_file(1).name '\' images_file(1).name '.png']));
-disc_GT=logical(imread([images_file(1).folder '\' images_file(1).name '\' images_file(1).name '_Disc_orig.png']));
-disc_output_net=logical(imread([images_file(1).folder '\' images_file(1).name '\' images_file(1).name '_Disc_output.png']));
-cup_GT=logical(imread([images_file(1).folder '\' images_file(1).name '\' images_file(1).name '_Cup_orig.png']));
-cup_output_net=logical(imread([images_file(1).folder '\' images_file(1).name '\' images_file(1).name '_Cup_output.png']));
+i=200;
+image=logical(imread([images_file(i).folder '\' images_file(i).name '\' images_file(i).name '.png']));
+disc_GT=logical(imread([images_file(i).folder '\' images_file(i).name '\' images_file(i).name '_Disc_orig.png']));
+disc_output_net=logical(imread([images_file(i).folder '\' images_file(i).name '\' images_file(i).name '_Disc_output.png']));
+cup_GT=logical(imread([images_file(i).folder '\' images_file(i).name '\' images_file(i).name '_Cup_orig.png']));
+cup_output_net=logical(imread([images_file(i).folder '\' images_file(i).name '\' images_file(i).name '_Cup_output.png']));
 
 
 %% Function for error of area (Chyba plochy)
